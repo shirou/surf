@@ -128,6 +128,25 @@ func TestBookmarks(t *testing.T) {
 	ut.AssertEquals("Surf Page 1", bow.Title())
 }
 
+func TestEvents(t *testing.T) {
+	ut.Run(t)
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		fmt.Fprint(w, htmlPage1)
+	}))
+	defer ts.Close()
+
+	var triggered *browser.Event
+	bow := NewBrowser()
+	bow.On(browser.PostRequestEvent, func(e *browser.Event) error {
+			triggered = e
+			return nil
+		})
+	err := bow.Open(ts.URL)
+	ut.AssertNil(err)
+	ut.AssertNotNil(triggered)
+	ut.AssertEquals(browser.PostRequestEvent, triggered.Type)
+}
+
 func TestClick(t *testing.T) {
 	ut.Run(t)
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

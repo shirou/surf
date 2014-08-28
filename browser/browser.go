@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 	"encoding/base64"
+	"log"
 )
 
 // Attribute represents a Browser capability.
@@ -66,6 +67,12 @@ type Browsable interface {
 
 	// SetHeadersJar sets the headers the browser sends with each request.
 	SetHeadersJar(h http.Header)
+
+	// SetEventDispatcher sets the event dispatcher.
+	SetEventDispatcher(ed *EventDispatcher)
+
+	// SetLogger sets the instance that will be used to log events.
+	SetLogger(l *log.Logger)
 
 	// AddRequestHeader adds a header the browser sends with each request.
 	AddRequestHeader(name, value string)
@@ -124,6 +131,12 @@ type Browsable interface {
 	// ResolveStringUrl works just like ResolveUrl, but the argument and return value are strings.
 	ResolveStringUrl(u string) (string, error)
 
+	// On is called to bind an event handler to an event type.
+	On(e EventType, h EventHandler)
+
+	// Do calls the handlers that have been bound to the given event.
+	Do(e *Event) error
+
 	// Download writes the contents of the document to the given writer.
 	Download(o io.Writer) (int64, error)
 
@@ -177,6 +190,12 @@ type Browser struct {
 
 	// auth stores the authorization credentials.
 	auth Authorization
+
+	// events is used to dispatch browser events.
+	events *EventDispatcher
+
+	// logger will log events.
+	logger *log.Logger
 }
 
 // Open requests the given URL using the GET method.
@@ -262,11 +281,11 @@ func (bow *Browser) Click(expr string) error {
 		return errors.NewElementNotFound(
 			"Expr '%s' must match an anchor tag.", expr)
 	}
-
 	href, err := bow.attrToResolvedUrl("href", sel)
 	if err != nil {
 		return err
 	}
+	bow.doClick(href)
 
 	return bow.httpGET(href, bow.Url())
 }
@@ -309,7 +328,7 @@ func (bow *Browser) Links() []*Link {
 		if err == nil {
 			links = append(links, NewLinkAsset(
 				href,
-				bow.attrOrDefault("id", "", s),
+				attrOrDefault("id", "", s),
 				s.Text(),
 			))
 		}
@@ -326,9 +345,9 @@ func (bow *Browser) Images() []*Image {
 		if err == nil {
 			images = append(images, NewImageAsset(
 				src,
-				bow.attrOrDefault("id", "", s),
-				bow.attrOrDefault("alt", "", s),
-				bow.attrOrDefault("title", "", s),
+				attrOrDefault("id", "", s),
+				attrOrDefault("alt", "", s),
+				attrOrDefault("title", "", s),
 			))
 		}
 	})
@@ -346,9 +365,9 @@ func (bow *Browser) Stylesheets() []*Stylesheet {
 			if err == nil {
 				stylesheets = append(stylesheets, NewStylesheetAsset(
 					href,
-					bow.attrOrDefault("id", "", s),
-					bow.attrOrDefault("media", "all", s),
-					bow.attrOrDefault("type", "text/css", s),
+					attrOrDefault("id", "", s),
+					attrOrDefault("media", "all", s),
+					attrOrDefault("type", "text/css", s),
 				))
 			}
 		}
@@ -365,8 +384,8 @@ func (bow *Browser) Scripts() []*Script {
 		if err == nil {
 			scripts = append(scripts, NewScriptAsset(
 				src,
-				bow.attrOrDefault("id", "", s),
-				bow.attrOrDefault("type", "text/javascript", s),
+				attrOrDefault("id", "", s),
+				attrOrDefault("type", "text/javascript", s),
 			))
 		}
 	})
@@ -422,6 +441,16 @@ func (bow *Browser) SetHeadersJar(h http.Header) {
 	bow.headers = h
 }
 
+// SetEventDispatcher sets the event dispatcher.
+func (bow *Browser) SetEventDispatcher(ed *EventDispatcher) {
+	bow.events = ed;
+}
+
+// SetLogger sets the instance that will be used to log events.
+func (bow *Browser) SetLogger(l *log.Logger) {
+	bow.logger = l
+}
+
 // AddRequestHeader sets a header the browser sends with each request.
 func (bow *Browser) AddRequestHeader(name, value string) {
 	bow.headers.Add(name, value)
@@ -440,6 +469,17 @@ func (bow *Browser) ResolveStringUrl(u string) (string, error) {
 	}
 	pu = bow.Url().ResolveReference(pu)
 	return pu.String(), nil
+}
+
+// On is used to register an event handler.
+func (bow *Browser) On(e EventType, h EventHandler) {
+	bow.events.On(e, h)
+}
+
+// Do calls the handlers that have been bound to the given event.
+func (bow *Browser) Do(e *Event) error {
+	e.Browser = bow
+	return bow.events.Do(e)
 }
 
 // Download writes the contents of the document to the given writer.
@@ -551,7 +591,15 @@ func (bow *Browser) httpPOST(u *url.URL, ref *url.URL, contentType string, body 
 
 // send uses the given *http.Request to make an HTTP request.
 func (bow *Browser) httpRequest(req *http.Request) error {
-	bow.preSend()
+	err := bow.doPreRequest(req)
+	if err != nil {
+		return err
+	}
+
+
+	if bow.refresh != nil {
+		bow.refresh.Stop()
+	}
 	resp, err := bow.buildClient().Do(req)
 	if err != nil {
 		return err
@@ -562,20 +610,17 @@ func (bow *Browser) httpRequest(req *http.Request) error {
 	}
 	bow.history.Push(bow.state)
 	bow.state = jar.NewHistoryState(req, resp, dom)
-	bow.postSend()
+	bow.handleMetaRefresh()
 
+	err = bow.doPostRequest(resp)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
-// preSend sets browser state before sending a request.
-func (bow *Browser) preSend() {
-	if bow.refresh != nil {
-		bow.refresh.Stop()
-	}
-}
-
-// postSend sets browser state after sending a request.
-func (bow *Browser) postSend() {
+// handleMetaRefresh handles the meta refresh tag in the page.
+func (bow *Browser) handleMetaRefresh() {
 	if bow.attributes[MetaRefreshHandling] {
 		sel := bow.Find("meta[http-equiv='refresh']")
 		if sel.Length() > 0 {
@@ -592,6 +637,33 @@ func (bow *Browser) postSend() {
 			}
 		}
 	}
+}
+
+// doPreRequest triggers the PreRequestEvent event.
+func (bow *Browser) doPreRequest(req *http.Request) error {
+	event := &Event{
+		Type: PreRequestEvent,
+		Args: req,
+	}
+	return bow.Do(event)
+}
+
+// doPostRequest triggers the PostRequestEvent event.
+func (bow *Browser) doPostRequest(resp *http.Response) error {
+	event := &Event{
+		Type: PostRequestEvent,
+		Args: resp,
+	}
+	return bow.Do(event)
+}
+
+// doClick triggers the ClickEvent event.
+func (bow *Browser) doClick(u *url.URL) error {
+	event := &Event{
+		Type: ClickEvent,
+		Args: u,
+	}
+	return bow.Do(event)
 }
 
 // shouldRedirect is used as the value to http.Client.CheckRedirect.
@@ -619,7 +691,7 @@ func (bow *Browser) attrToResolvedUrl(name string, sel *goquery.Selection) (*url
 }
 
 // attributeOrDefault reads an attribute and returns it or the default value when it's empty.
-func (bow *Browser) attrOrDefault(name, def string, sel *goquery.Selection) string {
+func attrOrDefault(name, def string, sel *goquery.Selection) string {
 	a, ok := sel.Attr(name)
 	if ok {
 		return a

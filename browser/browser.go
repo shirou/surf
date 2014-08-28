@@ -1,17 +1,17 @@
 package browser
 
 import (
+	"encoding/base64"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/headzoo/surf/errors"
 	"github.com/headzoo/surf/jar"
 	"io"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
-	"encoding/base64"
-	"log"
 )
 
 // Attribute represents a Browser capability.
@@ -443,7 +443,7 @@ func (bow *Browser) SetHeadersJar(h http.Header) {
 
 // SetEventDispatcher sets the event dispatcher.
 func (bow *Browser) SetEventDispatcher(ed *EventDispatcher) {
-	bow.events = ed;
+	bow.events = ed
 }
 
 // SetLogger sets the instance that will be used to log events.
@@ -595,7 +595,6 @@ func (bow *Browser) httpRequest(req *http.Request) error {
 	if err != nil {
 		return err
 	}
-
 
 	if bow.refresh != nil {
 		bow.refresh.Stop()

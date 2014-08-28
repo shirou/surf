@@ -2,15 +2,15 @@ package surf
 
 import (
 	"bytes"
+	"encoding/base64"
 	"fmt"
 	"github.com/headzoo/surf/browser"
 	"github.com/headzoo/surf/jar"
 	"github.com/headzoo/ut"
 	"net/http"
 	"net/http/httptest"
-	"testing"
-	"encoding/base64"
 	"strings"
+	"testing"
 )
 
 func TestGet(t *testing.T) {
@@ -138,9 +138,9 @@ func TestEvents(t *testing.T) {
 	var triggered *browser.Event
 	bow := NewBrowser()
 	bow.On(browser.PostRequestEvent, func(e *browser.Event) error {
-			triggered = e
-			return nil
-		})
+		triggered = e
+		return nil
+	})
 	err := bow.Open(ts.URL)
 	ut.AssertNil(err)
 	ut.AssertNotNil(triggered)

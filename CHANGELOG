@@ -1,3 +1,7 @@
+#### v0.4.8 - 2014/08/xx
+* Added user authorization.
+
+
 #### v0.4.8 - 2014/08/28
 * surf.NewBrowser() no longer returns an error.
 * Added jar.NewMemoryCookies() method.

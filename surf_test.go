@@ -9,6 +9,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"encoding/base64"
+	"strings"
 )
 
 func TestGet(t *testing.T) {
@@ -40,6 +42,20 @@ func TestGet(t *testing.T) {
 	ok = bow.Back()
 	ut.AssertFalse(ok)
 	ut.AssertEquals("Surf Page 1", bow.Title())
+}
+
+func TestAuthorization(t *testing.T) {
+	ut.Run(t)
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		fmt.Fprint(w, decodeAuth(req.Header["Authorization"][0]))
+	}))
+	defer ts.Close()
+
+	bow := NewBrowser()
+	bow.SetAuthorization("joe", "bob")
+	err := bow.Open(ts.URL)
+	ut.AssertNil(err)
+	ut.AssertEquals("joe", bow.Body())
 }
 
 func TestDownload(t *testing.T) {
@@ -235,6 +251,24 @@ func TestScripts(t *testing.T) {
 	ut.AssertNil(err)
 	ut.AssertGreaterThan(0, buff.Len())
 	ut.AssertEquals(int(l), buff.Len())
+}
+
+// decodeAuth returns the username from an authorization header.
+func decodeAuth(auth string) string {
+	s := strings.SplitN(auth, " ", 2)
+	if len(s) != 2 || s[0] != "Basic" {
+		return ""
+	}
+
+	b, err := base64.StdEncoding.DecodeString(s[1])
+	if err != nil {
+		return ""
+	}
+	pair := strings.SplitN(string(b), ":", 2)
+	if len(pair) != 2 {
+		return ""
+	}
+	return pair[0]
 }
 
 var htmlPage1 = `<!doctype html>

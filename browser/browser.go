@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"strings"
 	"time"
+	"encoding/base64"
 )
 
 // Attribute represents a Browser capability.
@@ -34,6 +35,12 @@ const (
 // when downloading assets from a page with a lot of assets.
 var InitialAssetsSliceSize = 20
 
+// Authorization holds the username and password for authorization.
+type Authorization struct {
+	Username string
+	Password string
+}
+
 // Browsable represents an HTTP web browser.
 type Browsable interface {
 	// SetUserAgent sets the user agent.
@@ -44,6 +51,9 @@ type Browsable interface {
 
 	// SetAttributes is used to set all the browser attributes.
 	SetAttributes(a AttributeMap)
+
+	// SetAuthorization sets the username and password to use during authorization.
+	SetAuthorization(username, password string)
 
 	// SetBookmarksJar sets the bookmarks jar the browser uses.
 	SetBookmarksJar(bj jar.BookmarksJar)
@@ -164,6 +174,9 @@ type Browser struct {
 
 	// refresh is a timer used to meta refresh pages.
 	refresh *time.Timer
+
+	// auth stores the authorization credentials.
+	auth Authorization
 }
 
 // Open requests the given URL using the GET method.
@@ -386,6 +399,14 @@ func (bow *Browser) SetAttributes(a AttributeMap) {
 	bow.attributes = a
 }
 
+// SetAuthorization sets the username and password to use during authorization.
+func (bow *Browser) SetAuthorization(username, password string) {
+	bow.auth = Authorization{
+		Username: username,
+		Password: password,
+	}
+}
+
 // SetBookmarksJar sets the bookmarks jar the browser uses.
 func (bow *Browser) SetBookmarksJar(bj jar.BookmarksJar) {
 	bow.bookmarks = bj
@@ -479,8 +500,8 @@ func (bow *Browser) buildClient() *http.Client {
 
 // buildRequest creates and returns a *http.Request type.
 // Sets any headers that need to be sent with the request.
-func (bow *Browser) buildRequest(method, url string, ref *url.URL) (*http.Request, error) {
-	req, err := http.NewRequest(method, url, nil)
+func (bow *Browser) buildRequest(method string, u *url.URL, ref *url.URL) (*http.Request, error) {
+	req, err := http.NewRequest(method, u.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -488,6 +509,12 @@ func (bow *Browser) buildRequest(method, url string, ref *url.URL) (*http.Reques
 	req.Header.Add("User-Agent", bow.userAgent)
 	if bow.attributes[SendReferer] && ref != nil {
 		req.Header.Add("Referer", ref.String())
+	}
+	if bow.auth.Username != "" {
+		req.Header.Add(
+			"Authorization",
+			"Basic "+basicAuth(bow.auth.Username, bow.auth.Password),
+		)
 	}
 
 	return req, nil
@@ -497,7 +524,7 @@ func (bow *Browser) buildRequest(method, url string, ref *url.URL) (*http.Reques
 // When via is not nil, and AttributeSendReferer is true, the Referer header will
 // be set to ref.
 func (bow *Browser) httpGET(u *url.URL, ref *url.URL) error {
-	req, err := bow.buildRequest("GET", u.String(), ref)
+	req, err := bow.buildRequest("GET", u, ref)
 	if err != nil {
 		return err
 	}
@@ -508,7 +535,7 @@ func (bow *Browser) httpGET(u *url.URL, ref *url.URL) error {
 // When via is not nil, and AttributeSendReferer is true, the Referer header will
 // be set to ref.
 func (bow *Browser) httpPOST(u *url.URL, ref *url.URL, contentType string, body io.Reader) error {
-	req, err := bow.buildRequest("POST", u.String(), ref)
+	req, err := bow.buildRequest("POST", u, ref)
 	if err != nil {
 		return err
 	}
@@ -598,4 +625,10 @@ func (bow *Browser) attrOrDefault(name, def string, sel *goquery.Selection) stri
 		return a
 	}
 	return def
+}
+
+// basicAuth creates an Authentication header from the username and passwrod.
+func basicAuth(username, password string) string {
+	auth := username + ":" + password
+	return base64.StdEncoding.EncodeToString([]byte(auth))
 }

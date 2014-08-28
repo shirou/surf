@@ -266,9 +266,8 @@ Surf uses the awesome [goquery](https://github.com/PuerkitoBio/goquery) by Marti
 
 
 ### TODO
-* Add user authentication.
-* Run JavaScript found in the page?
 * Add AttributeDownloadAssets so the browser downloads the images, scripts, stylesheets, etc.
 * Write more tests. 
 * File uploading in forms.
 * Handle checkboxes correctly.
+* Run JavaScript found in the page?

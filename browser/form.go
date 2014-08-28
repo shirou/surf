@@ -10,7 +10,7 @@ import (
 // Submittable represents an element that may be submitted, such as a form.
 type Submittable interface {
 	Method() string
-	Action() string
+	Action() *url.URL
 	Input(name, value string) error
 	Click(button string) error
 	Submit() error
@@ -22,7 +22,7 @@ type Form struct {
 	bow       Browsable
 	selection *goquery.Selection
 	method    string
-	action    string
+	action    *url.URL
 	fields    url.Values
 	buttons   url.Values
 }
@@ -49,7 +49,7 @@ func (f *Form) Method() string {
 
 // Action returns the form action URL.
 // The URL will always be absolute.
-func (f *Form) Action() string {
+func (f *Form) Action() *url.URL {
 	return f.action
 }
 
@@ -91,20 +91,6 @@ func (f *Form) Dom() *goquery.Selection {
 
 // send submits the form.
 func (f *Form) send(buttonName, buttonValue string) error {
-	method, ok := f.selection.Attr("method")
-	if !ok {
-		method = "GET"
-	}
-	action, ok := f.selection.Attr("action")
-	if !ok {
-		action = f.bow.Url().String()
-	}
-	aurl, err := url.Parse(action)
-	if err != nil {
-		return err
-	}
-	aurl = f.bow.ResolveUrl(aurl)
-
 	values := make(url.Values, len(f.fields)+1)
 	for name, vals := range f.fields {
 		values[name] = vals
@@ -113,10 +99,21 @@ func (f *Form) send(buttonName, buttonValue string) error {
 		values.Set(buttonName, buttonValue)
 	}
 
-	if strings.ToUpper(method) == "GET" {
-		return f.bow.OpenForm(aurl.String(), values)
+	ea := &FormArgs{
+		Values: values,
+		Method: f.method,
+		Action: f.action,
+	}
+	e := &Event{
+		Type: FormSubmitEvent,
+		Args: ea,
+	}
+	f.bow.Do(e)
+
+	if f.method == "GET" {
+		return f.bow.OpenForm(f.action.String(), values)
 	} else {
-		return f.bow.PostForm(aurl.String(), values)
+		return f.bow.PostForm(f.action.String(), values)
 	}
 
 	return nil
@@ -158,20 +155,18 @@ func serializeForm(sel *goquery.Selection) (url.Values, url.Values) {
 	return fields, buttons
 }
 
-func formAttributes(bow Browsable, s *goquery.Selection) (string, string) {
-	method, ok := s.Attr("method")
-	if !ok {
-		method = "GET"
-	}
-	action, ok := s.Attr("action")
-	if !ok {
+// formAttributes returns the method and action on the form.
+func formAttributes(bow Browsable, s *goquery.Selection) (string, *url.URL) {
+	method := strings.ToUpper(attrOrDefault("method", "GET", s))
+	action := attrOrDefault("action", bow.Url().String(), s)
+	action, err := bow.ResolveStringUrl(action)
+	if err != nil {
 		action = bow.Url().String()
 	}
-	aurl, err := url.Parse(action)
+	au, err := url.Parse(action)
 	if err != nil {
-		return "", ""
+		au = bow.Url()
 	}
-	aurl = bow.ResolveUrl(aurl)
 
-	return strings.ToUpper(method), aurl.String()
+	return method, au
 }

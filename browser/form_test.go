@@ -24,11 +24,12 @@ func TestBrowserForm(t *testing.T) {
 	bow := &Browser{}
 	bow.headers = make(http.Header, 10)
 	bow.history = jar.NewMemoryHistory()
+	bow.events = NewEventDispatcher()
 
 	err := bow.Open(ts.URL)
 	ut.AssertNil(err)
 
-	f, err := bow.Form("[name='default']")
+	f, err := bow.Form("form[name='default']")
 	ut.AssertNil(err)
 
 	f.Input("age", "55")

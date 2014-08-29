@@ -21,8 +21,8 @@ func NewHistoryState(req *http.Request, resp *http.Response, dom *goquery.Docume
 	}
 }
 
-// History is a type that records browser state.
-type History interface {
+// HistoryJar is a type that records browser state.
+type HistoryJar interface {
 	Len() int
 	Push(p *State) int
 	Pop() *State

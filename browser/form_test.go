@@ -2,6 +2,7 @@ package browser
 
 import (
 	"fmt"
+	"github.com/headzoo/surf/event"
 	"github.com/headzoo/surf/jar"
 	"github.com/headzoo/ut"
 	"net/http"
@@ -24,7 +25,7 @@ func TestBrowserForm(t *testing.T) {
 	bow := &Browser{}
 	bow.headers = make(http.Header, 10)
 	bow.history = jar.NewMemoryHistory()
-	bow.events = NewEventDispatcher()
+	bow.Dispatcher = event.NewDispatcher()
 
 	err := bow.Open(ts.URL)
 	ut.AssertNil(err)

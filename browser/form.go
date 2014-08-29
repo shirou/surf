@@ -3,6 +3,7 @@ package browser
 import (
 	"github.com/PuerkitoBio/goquery"
 	"github.com/headzoo/surf/errors"
+	"github.com/headzoo/surf/event"
 	"net/url"
 	"strings"
 )
@@ -98,17 +99,11 @@ func (f *Form) send(buttonName, buttonValue string) error {
 	if buttonName != "" {
 		values.Set(buttonName, buttonValue)
 	}
-
-	ea := &FormArgs{
+	f.bow.Do(event.Submit, f, &event.SubmitArgs{
 		Values: values,
 		Method: f.method,
 		Action: f.action,
-	}
-	e := &Event{
-		Type: FormSubmitEvent,
-		Args: ea,
-	}
-	f.bow.Do(e)
+	})
 
 	if f.method == "GET" {
 		return f.bow.OpenForm(f.action.String(), values)

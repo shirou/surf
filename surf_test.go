@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"github.com/headzoo/surf/browser"
+	"github.com/headzoo/surf/event"
 	"github.com/headzoo/surf/jar"
 	"github.com/headzoo/ut"
 	"net/http"
@@ -135,16 +136,30 @@ func TestEvents(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	var triggered *browser.Event
+	var trigger event.Event
+	var sender interface{}
+	var args interface{}
 	bow := NewBrowser()
-	bow.On(browser.PostRequestEvent, func(e *browser.Event) error {
-		triggered = e
+	bow.OnFunc(event.PostRequest, (event.HandlerFunc)(func(t event.Event, s, a interface{}) error {
+		trigger = t
+		sender = s
+		args = a
 		return nil
-	})
+	}))
+
 	err := bow.Open(ts.URL)
 	ut.AssertNil(err)
-	ut.AssertNotNil(triggered)
-	ut.AssertEquals(browser.PostRequestEvent, triggered.Type)
+	ut.AssertEquals(trigger, event.PostRequest)
+	ut.AssertEquals(sender, bow)
+	ut.AssertNotNil(args)
+
+	handler := &TestEventHandler{}
+	bow = NewBrowser()
+	bow.On(event.PostRequest, handler)
+	bow.Open(ts.URL)
+	ut.AssertEquals(handler.Event, event.PostRequest)
+	ut.AssertEquals(handler.Sender, bow)
+	ut.AssertNotNil(handler.Args)
 }
 
 func TestClick(t *testing.T) {
@@ -288,6 +303,19 @@ func decodeAuth(auth string) string {
 		return ""
 	}
 	return pair[0]
+}
+
+type TestEventHandler struct {
+	Event event.Event
+	Sender  interface{}
+	Args    interface{}
+}
+
+func (h *TestEventHandler) HandleEvent(event event.Event, sender, args interface{}) error {
+	h.Event = event
+	h.Sender = sender
+	h.Args = args
+	return nil
 }
 
 var htmlPage1 = `<!doctype html>

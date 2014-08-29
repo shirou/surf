@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/headzoo/surf/errors"
+	"github.com/headzoo/surf/event"
 	"github.com/headzoo/surf/jar"
 	"io"
 	"io/ioutil"
@@ -44,6 +45,8 @@ type Authorization struct {
 
 // Browsable represents an HTTP web browser.
 type Browsable interface {
+	event.Eventable
+
 	// SetUserAgent sets the user agent.
 	SetUserAgent(ua string)
 
@@ -69,7 +72,7 @@ type Browsable interface {
 	SetHeadersJar(h http.Header)
 
 	// SetEventDispatcher sets the event dispatcher.
-	SetEventDispatcher(ed *EventDispatcher)
+	SetEventDispatcher(ed event.Eventable)
 
 	// SetLogger sets the instance that will be used to log events.
 	SetLogger(l *log.Logger)
@@ -131,12 +134,6 @@ type Browsable interface {
 	// ResolveStringUrl works just like ResolveUrl, but the argument and return value are strings.
 	ResolveStringUrl(u string) (string, error)
 
-	// On is called to bind an event handler to an event type.
-	On(e EventType, h EventHandler)
-
-	// Do calls the handlers that have been bound to the given event.
-	Do(e *Event) error
-
 	// Download writes the contents of the document to the given writer.
 	Download(o io.Writer) (int64, error)
 
@@ -164,6 +161,8 @@ type Browsable interface {
 
 // Default is the default Browser implementation.
 type Browser struct {
+	*event.Dispatcher
+
 	// state is the current browser state.
 	state *jar.State
 
@@ -190,9 +189,6 @@ type Browser struct {
 
 	// auth stores the authorization credentials.
 	auth Authorization
-
-	// events is used to dispatch browser events.
-	events *EventDispatcher
 
 	// logger will log events.
 	logger *log.Logger
@@ -442,8 +438,8 @@ func (bow *Browser) SetHeadersJar(h http.Header) {
 }
 
 // SetEventDispatcher sets the event dispatcher.
-func (bow *Browser) SetEventDispatcher(ed *EventDispatcher) {
-	bow.events = ed
+func (bow *Browser) SetEventDispatcher(ed event.Eventable) {
+	bow.Dispatcher = ed.(*event.Dispatcher)
 }
 
 // SetLogger sets the instance that will be used to log events.
@@ -469,17 +465,6 @@ func (bow *Browser) ResolveStringUrl(u string) (string, error) {
 	}
 	pu = bow.Url().ResolveReference(pu)
 	return pu.String(), nil
-}
-
-// On is used to register an event handler.
-func (bow *Browser) On(e EventType, h EventHandler) {
-	bow.events.On(e, h)
-}
-
-// Do calls the handlers that have been bound to the given event.
-func (bow *Browser) Do(e *Event) error {
-	e.Browser = bow
-	return bow.events.Do(e)
 }
 
 // Download writes the contents of the document to the given writer.
@@ -640,29 +625,17 @@ func (bow *Browser) handleMetaRefresh() {
 
 // doPreRequest triggers the PreRequestEvent event.
 func (bow *Browser) doPreRequest(req *http.Request) error {
-	event := &Event{
-		Type: PreRequestEvent,
-		Args: req,
-	}
-	return bow.Do(event)
+	return bow.Do(event.PreRequest, bow, req)
 }
 
 // doPostRequest triggers the PostRequestEvent event.
 func (bow *Browser) doPostRequest(resp *http.Response) error {
-	event := &Event{
-		Type: PostRequestEvent,
-		Args: resp,
-	}
-	return bow.Do(event)
+	return bow.Do(event.PostRequest, bow, resp)
 }
 
 // doClick triggers the ClickEvent event.
 func (bow *Browser) doClick(u *url.URL) error {
-	event := &Event{
-		Type: ClickEvent,
-		Args: u,
-	}
-	return bow.Do(event)
+	return bow.Do(event.Click, bow, u)
 }
 
 // shouldRedirect is used as the value to http.Client.CheckRedirect.

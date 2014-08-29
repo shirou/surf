@@ -4,6 +4,7 @@ package surf
 import (
 	"github.com/headzoo/surf/agent"
 	"github.com/headzoo/surf/browser"
+	"github.com/headzoo/surf/event"
 	"github.com/headzoo/surf/jar"
 )
 
@@ -29,7 +30,7 @@ func NewBrowser() *browser.Browser {
 	bow.SetBookmarksJar(jar.NewMemoryBookmarks())
 	bow.SetHistoryJar(jar.NewMemoryHistory())
 	bow.SetHeadersJar(jar.NewMemoryHeaders())
-	bow.SetEventDispatcher(browser.NewEventDispatcher())
+	bow.SetEventDispatcher(event.NewDispatcher())
 	bow.SetAttributes(browser.AttributeMap{
 		browser.SendReferer:         DefaultSendReferer,
 		browser.MetaRefreshHandling: DefaultMetaRefreshHandling,

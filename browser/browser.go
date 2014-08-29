@@ -60,16 +60,16 @@ type Browsable interface {
 	SetAuthorization(username, password string)
 
 	// SetBookmarksJar sets the bookmarks jar the browser uses.
-	SetBookmarksJar(bj jar.BookmarksJar)
+	SetBookmarksJar(bj jar.Bookmarks)
 
 	// SetCookieJar is used to set the cookie jar the browser uses.
 	SetCookieJar(cj http.CookieJar)
 
 	// SetHistoryJar is used to set the history jar the browser uses.
-	SetHistoryJar(hj jar.HistoryJar)
+	SetHistoryJar(hj jar.History)
 
 	// SetRecorderJar sets a jar.RecorderJar that will record browser states.
-	SetRecorderJar(rj jar.RecorderJar)
+	SetRecorderJar(rj jar.Recorder)
 
 	// SetHeadersJar sets the headers the browser sends with each request.
 	SetHeadersJar(h http.Header)
@@ -105,7 +105,7 @@ type Browsable interface {
 	Reload() error
 
 	// Recorder returns the set recorder.
-	Recorder() jar.RecorderJar
+	Recorder() jar.Recorder
 
 	// Bookmark saves the page URL in the bookmarks with the given name.
 	Bookmark(name string) error
@@ -179,13 +179,13 @@ type Browser struct {
 	cookies http.CookieJar
 
 	// bookmarks stores the saved bookmarks.
-	bookmarks jar.BookmarksJar
+	bookmarks jar.Bookmarks
 
 	// history stores the visited pages.
-	history jar.HistoryJar
+	history jar.History
 
 	// recorder is used to record browser states and play them back.
-	recorder jar.RecorderJar
+	recorder jar.Recorder
 
 	// headers are additional headers to send with each request.
 	headers http.Header
@@ -267,7 +267,7 @@ func (bow *Browser) Reload() error {
 }
 
 // Recorder returns the set recorder.
-func (bow *Browser) Recorder() jar.RecorderJar {
+func (bow *Browser) Recorder() jar.Recorder {
 	return bow.recorder
 }
 
@@ -437,17 +437,17 @@ func (bow *Browser) SetAuthorization(username, password string) {
 }
 
 // SetBookmarksJar sets the bookmarks jar the browser uses.
-func (bow *Browser) SetBookmarksJar(bj jar.BookmarksJar) {
+func (bow *Browser) SetBookmarksJar(bj jar.Bookmarks) {
 	bow.bookmarks = bj
 }
 
 // SetHistoryJar is used to set the history jar the browser uses.
-func (bow *Browser) SetHistoryJar(hj jar.HistoryJar) {
+func (bow *Browser) SetHistoryJar(hj jar.History) {
 	bow.history = hj
 }
 
 // SetRecorderJar sets a jar.RecorderJar that will record browser states.
-func (bow *Browser) SetRecorderJar(rj jar.RecorderJar) {
+func (bow *Browser) SetRecorderJar(rj jar.Recorder) {
 	bow.recorder = rj
 
 	// Let the recorder know when the browser has made a request so it can

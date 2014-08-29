@@ -14,8 +14,8 @@ const initialBookmarksCapacity = 20
 // BookmarksMap stores bookmarks.
 type BookmarksMap map[string]string
 
-// BookmarksJar is a container for storage and retrieval of bookmarks.
-type BookmarksJar interface {
+// Bookmarks is a container for storage and retrieval of bookmarks.
+type Bookmarks interface {
 	// Save saves a bookmark with the given name.
 	Save(name, url string) error
 

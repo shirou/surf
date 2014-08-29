@@ -5,9 +5,9 @@ import (
 	"net/http"
 )
 
-// RecorderJar records browser requests which can be replayed by the browser in
+// Recorder records browser requests which can be replayed by the browser in
 // the order they were recorded.
-type RecorderJar interface {
+type Recorder interface {
 	event.Eventable
 
 	// Start begins recording browser requests.

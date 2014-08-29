@@ -140,6 +140,14 @@ bow.SetBookmarksJar(jar.NewMemoryBookmarks())
 bookmarks, err = jar.NewFileBookmarks("/home/joe/bookmarks.json")
 if err != nil { panic(err) }
 bow.SetBookmarksJar(bookmarks)
+
+// Override the build in history jar.
+// Surf uses jar.MemoryHistory by default.
+bow.SetHistoryJar(jar.NewMemoryHistory())
+
+// Override the build in recorder jar.
+// Surf uses jar.MemoryRecorder by default.
+bow.SetRecorderJar(jar.NewMemoryRecorder())
 ```
 
 

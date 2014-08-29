@@ -25,12 +25,13 @@ var (
 // NewBrowser creates and returns a *browser.Browser type.
 func NewBrowser() *browser.Browser {
 	bow := &browser.Browser{}
+	bow.SetEventDispatcher(event.NewDispatcher())
 	bow.SetUserAgent(DefaultUserAgent)
 	bow.SetCookieJar(jar.NewMemoryCookies())
 	bow.SetBookmarksJar(jar.NewMemoryBookmarks())
 	bow.SetHistoryJar(jar.NewMemoryHistory())
+	bow.SetRecorderJar(jar.NewMemoryRecorder())
 	bow.SetHeadersJar(jar.NewMemoryHeaders())
-	bow.SetEventDispatcher(event.NewDispatcher())
 	bow.SetAttributes(browser.AttributeMap{
 		browser.SendReferer:         DefaultSendReferer,
 		browser.MetaRefreshHandling: DefaultMetaRefreshHandling,

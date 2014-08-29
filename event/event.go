@@ -1,6 +1,8 @@
 package event
 
-import "net/url"
+import (
+	"net/url"
+)
 
 // Event describes a type of event.
 type Event int16
@@ -23,17 +25,17 @@ const (
 	// The event arguments are an instance of the *SubmitArgs type.
 	Submit
 
-	// RecordPlay is an event that is triggered when a browser recorder
-	// starts recording. The event argument is the recorder.
-	RecordPlay
+	// RecordStart is an event that is triggered when a browser recorder
+	// starts recording. There is no event argument.
+	RecordStart
 
 	// RecordStopEvent is an event that is triggered when a browser recorder
-	// stops recording. The event argument is the recorder.
+	// stops recording. There is no event argument.
 	RecordStop
 
-	// RecordReplayEvent is an event that is triggered when a browser recorder
-	// starts playback. The event arguments is an instance of []*State, which
-	// are the recorded states.
+	// RecordReplayEvent is an event that is triggered for each request a
+	// recorder has recorded. The event arguments is an instance of *http.Request to be
+	// replayed.
 	RecordReplay
 )
 
@@ -42,14 +44,16 @@ const (
 // Event dispatching stops when the Triggered() method returns an error. The
 // error is then returned to the object that triggered the event.
 type Handler interface {
-	HandleEvent(event Event, sender, args interface{}) error
+	// HandleEvent is called when an event is triggered that the handler is
+	// bound to.
+	HandleEvent(e Event, sender, args interface{}) error
 }
 
 // HandlerFunc is a function that handles triggered events.
 //
 // Event dispatching stops when a handler returns an error. The error is then
 // returned to the object that triggered the event.
-type HandlerFunc func(event Event, sender, args interface{}) error
+type HandlerFunc func(e Event, sender, args interface{}) error
 
 // HandlerMap is a map of event handler functions.
 type HandlerMap map[Event][]HandlerFunc
@@ -80,21 +84,21 @@ func NewDispatcher() *Dispatcher {
 }
 
 // On binds an event to an event handler.
-func (ed *Dispatcher) On(event Event, handler Handler) {
-	ed.handlers[event] = append(ed.handlers[event], func(e Event, sender, args interface{}) error {
+func (ed *Dispatcher) On(e Event, handler Handler) {
+	ed.handlers[e] = append(ed.handlers[e], func(e Event, sender, args interface{}) error {
 		return handler.HandleEvent(e, sender, args)
 	})
 }
 
 // OnEventFunc binds an event to an event handling function.
-func (ed *Dispatcher) OnFunc(event Event, handler HandlerFunc) {
-	ed.handlers[event] = append(ed.handlers[event], handler)
+func (ed *Dispatcher) OnFunc(e Event, handler HandlerFunc) {
+	ed.handlers[e] = append(ed.handlers[e], handler)
 }
 
 // Do calls the handlers that have been bound to the given event.
-func (ed *Dispatcher) Do(event Event, sender, args interface{}) error {
-	for _, handler := range ed.handlers[event] {
-		err := handler(event, sender, args)
+func (ed *Dispatcher) Do(e Event, sender, args interface{}) error {
+	for _, handler := range ed.handlers[e] {
+		err := handler(e, sender, args)
 		if err != nil {
 			return err
 		}

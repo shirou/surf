@@ -66,7 +66,10 @@ type Browsable interface {
 	SetCookieJar(cj http.CookieJar)
 
 	// SetHistoryJar is used to set the history jar the browser uses.
-	SetHistoryJar(hj jar.History)
+	SetHistoryJar(hj jar.HistoryJar)
+
+	// SetRecorderJar sets a jar.RecorderJar that will record browser states.
+	SetRecorderJar(rj jar.RecorderJar)
 
 	// SetHeadersJar sets the headers the browser sends with each request.
 	SetHeadersJar(h http.Header)
@@ -100,6 +103,9 @@ type Browsable interface {
 
 	// Reload duplicates the last successful request.
 	Reload() error
+
+	// Recorder returns the set recorder.
+	Recorder() jar.RecorderJar
 
 	// Bookmark saves the page URL in the bookmarks with the given name.
 	Bookmark(name string) error
@@ -176,7 +182,10 @@ type Browser struct {
 	bookmarks jar.BookmarksJar
 
 	// history stores the visited pages.
-	history jar.History
+	history jar.HistoryJar
+
+	// recorder is used to record browser states and play them back.
+	recorder jar.RecorderJar
 
 	// headers are additional headers to send with each request.
 	headers http.Header
@@ -255,6 +264,11 @@ func (bow *Browser) Reload() error {
 		return bow.httpRequest(bow.state.Request)
 	}
 	return errors.NewPageNotLoaded("Cannot reload, the previous request failed.")
+}
+
+// Recorder returns the set recorder.
+func (bow *Browser) Recorder() jar.RecorderJar {
+	return bow.recorder
 }
 
 // Bookmark saves the page URL in the bookmarks with the given name.
@@ -428,8 +442,27 @@ func (bow *Browser) SetBookmarksJar(bj jar.BookmarksJar) {
 }
 
 // SetHistoryJar is used to set the history jar the browser uses.
-func (bow *Browser) SetHistoryJar(hj jar.History) {
+func (bow *Browser) SetHistoryJar(hj jar.HistoryJar) {
 	bow.history = hj
+}
+
+// SetRecorderJar sets a jar.RecorderJar that will record browser states.
+func (bow *Browser) SetRecorderJar(rj jar.RecorderJar) {
+	bow.recorder = rj
+
+	// Let the recorder know when the browser has made a request so it can
+	// be recorded.
+	bow.On(event.PostRequest, rj)
+
+	// Have the recorder let the browser know when it's playing back requests
+	// so the browser can make the request.
+	bow.recorder.OnFunc(event.RecordReplay, (event.HandlerFunc)(func(_ event.Event, _, args interface{}) error {
+		err := bow.httpRequest(args.(*http.Request))
+		if err != nil {
+			return err
+		}
+		return nil
+	}))
 }
 
 // SetHeadersJar sets the headers the browser sends with each request.

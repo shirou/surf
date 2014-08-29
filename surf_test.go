@@ -162,6 +162,35 @@ func TestEvents(t *testing.T) {
 	ut.AssertNotNil(handler.Args)
 }
 
+func TestRecording(t *testing.T) {
+	ut.Run(t)
+	paths := make([]string, 0, 4)
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		paths = append(paths, req.URL.Path)
+		if req.URL.Path == "/page1" {
+			fmt.Fprint(w, htmlPage1)
+		} else if req.URL.Path == "/page2" {
+			fmt.Fprint(w, htmlPage2)
+		}
+	}))
+	defer ts.Close()
+
+	bow := NewBrowser()
+	bow.Recorder().Start()
+	bow.Open(ts.URL + "/page1")
+	bow.Open(ts.URL + "/page2")
+	bow.Recorder().Stop()
+	ut.AssertEquals(2, len(paths))
+
+	bow.Recorder().Replay()
+	ut.AssertEquals(4, len(paths))
+	ut.AssertEquals("/page1", paths[0])
+	ut.AssertEquals("/page2", paths[1])
+	ut.AssertEquals("/page1", paths[2])
+	ut.AssertEquals("/page2", paths[3])
+}
+
 func TestClick(t *testing.T) {
 	ut.Run(t)
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -306,9 +335,9 @@ func decodeAuth(auth string) string {
 }
 
 type TestEventHandler struct {
-	Event event.Event
-	Sender  interface{}
-	Args    interface{}
+	Event  event.Event
+	Sender interface{}
+	Args   interface{}
 }
 
 func (h *TestEventHandler) HandleEvent(event event.Event, sender, args interface{}) error {

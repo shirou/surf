@@ -1,3 +1,5 @@
+[![wercker status](https://app.wercker.com/status/785ce5f245f0f48959452d698485f55f/m "wercker status")](https://app.wercker.com/project/bykey/785ce5f245f0f48959452d698485f55f)
+
 This is forked version by haruyama. Original: https://github.com/headzoo/surf
 
 Surf

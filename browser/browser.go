@@ -2,15 +2,16 @@ package browser
 
 import (
 	"bytes"
-	"github.com/PuerkitoBio/goquery"
-	"github.com/headzoo/surf/errors"
-	"github.com/headzoo/surf/jar"
 	"io"
 	"mime/multipart"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
+
+	"github.com/PuerkitoBio/goquery"
+	"github.com/haruyama/surf/errors"
+	"github.com/haruyama/surf/jar"
 )
 
 // Attribute represents a Browser capability.

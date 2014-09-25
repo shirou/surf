@@ -2,10 +2,11 @@ package jar
 
 import (
 	"encoding/json"
-	"github.com/headzoo/surf/errors"
-	"github.com/headzoo/surf/util"
 	"io/ioutil"
 	"os"
+
+	"github.com/haruyama/surf/errors"
+	"github.com/haruyama/surf/util"
 )
 
 // initialBookmarksCapacity is the initial capacity for the bookmarks map.

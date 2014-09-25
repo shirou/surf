@@ -3,12 +3,13 @@ package surf
 import (
 	"bytes"
 	"fmt"
-	"github.com/headzoo/surf/browser"
-	"github.com/headzoo/surf/jar"
-	"github.com/headzoo/ut"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/haruyama/surf/browser"
+	"github.com/haruyama/surf/jar"
+	"github.com/headzoo/ut"
 )
 
 func TestGet(t *testing.T) {

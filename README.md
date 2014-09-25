@@ -1,5 +1,8 @@
+This is forked version by haruyama. Original: https://github.com/headzoo/surf
+
 Surf
 ====
+
 Surf is a Go (golang) library that implements a virtual browser that you can control pragmatically. Just like a real browser you can open pages, follow links, bookmark pages, submit forms, and many other things. Surf is modeled after Andy Lester's Perl module [WWW::Mechanize](http://search.cpan.org/~ether/WWW-Mechanize-1.73/lib/WWW/Mechanize.pm).
 
 [Complete API documentation is available from the GoDoc website.](http://godoc.org/github.com/headzoo/surf)
@@ -17,14 +20,14 @@ _This project is very young, and the API is bound to change often. Use at your o
 
 
 ### Installation
-Download the library using go.  
-`go get github.com/headzoo/surf`
+Download the library using go.
+`go get github.com/haruyama/surf`
 
-You'll need the ut library if you want to run the unit tests.  
-`go get github.com/headzoo/ut`  
+You'll need the ut library if you want to run the unit tests.
+`go get github.com/headzoo/ut`
 
-Import the library into your project.  
-`import "github.com/headzoo/surf"`
+Import the library into your project.
+`import "github.com/haruyama/surf"`
 
 
 ### General Usage
@@ -112,7 +115,7 @@ for _, image := range bow.Images() {
     	continue
     }
     defer fout.Close()
-    
+
     _, err = image.Download(fout)
     if err != nil {
     	log.Printf(
@@ -135,7 +138,7 @@ for _, image := range bow.Images() {
 			"Error creating file '%s'.", filename)
 		continue
 	}
-	
+
 	image.DownloadAsync(fout, ch)
 	queue++
 }
@@ -154,14 +157,14 @@ for {
 		} else {
 		    log.Printf("Downloaded '%s'.\n", result.Asset.Url())
 		}
-		
+
 		queue--
 		if queue == 0 {
 			goto FINISHED
 		}
 	}
 }
-	
+
 FINISHED:
 close(ch)
 log.Println("Downloads complete!")
@@ -268,6 +271,6 @@ Contributing authors:
 * Add user authentication.
 * Run JavaScript found in the page?
 * Add AttributeDownloadAssets so the browser downloads the images, scripts, stylesheets, etc.
-* Write more tests. 
+* Write more tests.
 * File uploading in forms.
 * Handle checkboxes correctly.

@@ -10,8 +10,9 @@ import (
 	"bytes"
 	"runtime"
 	"strings"
-	"syscall"
 	"text/template"
+
+	"github.com/shirou/gopsutil"
 )
 
 var (
@@ -361,22 +362,20 @@ func createFromDetails(bname, bver, osname, osver string, c []string) string {
 
 // osName returns the name of the OS.
 func osName() string {
-	buf := &syscall.Utsname{}
-	err := syscall.Uname(buf)
-	if err != nil {
+	h, err := gopsutil.HostInfo()
+	if err != nil || h.OS == "" {
 		return "Linux"
 	}
-	return charsToString(buf.Sysname)
+	return h.OS
 }
 
 // osVersion returns the OS version.
 func osVersion() string {
-	buf := &syscall.Utsname{}
-	err := syscall.Uname(buf)
-	if err != nil {
+	h, err := gopsutil.HostInfo()
+	if err != nil || h.PlatformVersion == "" {
 		return "0.0"
 	}
-	return charsToString(buf.Release)
+	return h.PlatformVersion
 }
 
 // charsToString converts a [65]int8 byte array into a string.

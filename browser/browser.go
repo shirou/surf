@@ -134,6 +134,9 @@ type Browsable interface {
 	// ResponseHeaders returns the page headers.
 	ResponseHeaders() http.Header
 
+	// Response returns a http.Response pointer.
+	Response() *http.Response
+
 	// Body returns the page body as a string of html.
 	Body() string
 
@@ -472,6 +475,11 @@ func (bow *Browser) Title() string {
 // ResponseHeaders returns the page headers.
 func (bow *Browser) ResponseHeaders() http.Header {
 	return bow.state.Response.Header
+}
+
+// Response returns the pointer to http.Response.
+func (bow *Browser) Response() *http.Response {
+	return bow.state.Response
 }
 
 // Body returns the page body as a string of html.

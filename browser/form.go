@@ -14,6 +14,7 @@ type Submittable interface {
 	Action() string
 	SetAction(string)
 	Input(name, value string) error
+	DeleteField(name string) error
 	InputSlice(name string, values []string) error
 	CheckBox(name string, values []string) error
 	Click(button string) error
@@ -69,6 +70,16 @@ func (f *Form) SetAction(aurl string) {
 func (f *Form) Input(name, value string) error {
 	if f.definedFields[name] {
 		f.fields.Set(name, value)
+		return nil
+	}
+	return errors.NewElementNotFound(
+		"No input found with name '%s'.", name)
+}
+
+// DeleteField deletes a form field
+func (f *Form) DeleteField(name string) error {
+	if f.definedFields[name] {
+		f.fields.Del(name)
 		return nil
 	}
 	return errors.NewElementNotFound(

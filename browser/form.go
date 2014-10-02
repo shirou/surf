@@ -12,6 +12,7 @@ import (
 type Submittable interface {
 	Method() string
 	Action() string
+	SetAction(string)
 	Input(name, value string) error
 	InputSlice(name string, values []string) error
 	CheckBox(name string, values []string) error
@@ -56,6 +57,12 @@ func (f *Form) Method() string {
 // The URL will always be absolute.
 func (f *Form) Action() string {
 	return f.action
+}
+
+// SetAction set Action URL.
+// The URL will always be absolute.
+func (f *Form) SetAction(aurl string) {
+	f.action = aurl
 }
 
 // Input sets the value of a form field.
@@ -118,9 +125,12 @@ func (f *Form) send(buttonName, buttonValue string) error {
 	if !ok {
 		method = "GET"
 	}
-	action, ok := f.selection.Attr("action")
-	if !ok {
-		action = f.bow.Url().String()
+	action := f.action
+	if action == "" {
+		action, ok = f.selection.Attr("action")
+		if !ok {
+			action = f.bow.Url().String()
+		}
 	}
 	aurl, err := url.Parse(action)
 	if err != nil {

@@ -13,6 +13,7 @@ type Submittable interface {
 	Method() string
 	Action() string
 	SetAction(string)
+	Field(name string) (string, bool)
 	Input(name, value string) error
 	DeleteField(name string) error
 	InputSlice(name string, values []string) error
@@ -64,6 +65,15 @@ func (f *Form) Action() string {
 // The URL will always be absolute.
 func (f *Form) SetAction(aurl string) {
 	f.action = aurl
+}
+
+// Field returns the value of a form field.
+func (f *Form) Field(name string) (string, bool) {
+	if f.definedFields[name] {
+		return f.fields.Get(name), true
+	} else {
+		return "", false
+	}
 }
 
 // Input sets the value of a form field.

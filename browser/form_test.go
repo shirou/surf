@@ -33,7 +33,20 @@ func TestBrowserForm(t *testing.T) {
 	f, err := bow.Form("[name='default']")
 	ut.AssertNil(err)
 
+	v, ok := f.Field("age")
+	ut.AssertTrue(ok)
+	ut.AssertEquals("", v)
+
+	v, ok = f.Field("ageage")
+	ut.AssertFalse(ok)
+	ut.AssertEquals("", v)
+
 	f.Input("age", "55")
+
+	v, ok = f.Field("age")
+	ut.AssertTrue(ok)
+	ut.AssertEquals("55", v)
+
 	f.Input("gender", "male")
 	err = f.Click("submit2")
 	ut.AssertNil(err)
